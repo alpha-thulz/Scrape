@@ -89,13 +89,6 @@ public class Main {
                     driver.quit();
                     break;
                 } catch (NullPointerException e) {
-                    try {
-                        File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-                        FileUtils.copyFile(screenshot, new File("screenshot.png"));
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
-
                     e.printStackTrace();
                     System.err.println(driver.getPageSource());
                     if (count.incrementAndGet() == 3) {
