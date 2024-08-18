@@ -97,6 +97,7 @@ public class Main {
                     }
 
                     e.printStackTrace();
+                    System.err.println(driver.getPageSource());
                     if (count.incrementAndGet() == 3) {
                         count.set(0);
                         break;
