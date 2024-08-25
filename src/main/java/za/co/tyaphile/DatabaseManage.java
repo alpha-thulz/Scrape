@@ -11,7 +11,8 @@ public class DatabaseManage {
     private final String DB_SCHEMA = "products";
     private final String DB_TABLE = "product";
     private final String username = "root";
-    private final String password = "P@ssw0rd_01";
+    private final String password = "P@ssi0nat3ly";
+//    private final String password = "P@ssw0rd_01";
     private Connection connection;
     private PreparedStatement preparedStatement;
     private ResultSet resultSet;
@@ -26,7 +27,7 @@ public class DatabaseManage {
                     "`product_description` TEXT NOT NULL, " +
                     "`product_old_price` DOUBLE, " +
                     "`product_current_price` DOUBLE NOT NULL, " +
-                    "`product_weight` DOUBLE NOT NULL, " +
+                    "`product_weight` DOUBLE DEFAULT 0 NOT NULL, " +
                     "`product_measure` VARCHAR(11), " +
                     "`product_bulk` VARCHAR(45), " +
                     "`product_image` BLOB NOT NULL, " +

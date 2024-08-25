@@ -1,5 +1,8 @@
 package za.co.tyaphile;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import okhttp3.*;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
@@ -19,7 +22,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Main {
-    private static DatabaseManage database;
+    private OkHttpClient client = new OkHttpClient();
 
     public double getDecimalNumber(@NotNull String text) {
         if (text.isEmpty()) return 0;
@@ -50,11 +53,8 @@ public class Main {
     }
 
     private void browseMonitorShoprite() {
-        database = new DatabaseManage();
-
         String url = "https://www.shoprite.co.za/c-2256/All-Departments";
         AtomicInteger count = new AtomicInteger();
-
 
         ChromeOptions options = new ChromeOptions();
         options.addArguments("start-maximized");
@@ -63,18 +63,15 @@ public class Main {
         options.addArguments("--headless");
         options.addArguments(
                 "user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
-
+        options.addArguments("--disable-gpu");
 //        options.addArguments("--window-size=1400,1200");
-//        options.addArguments("--disable-gpu");
 
         WebDriver driver = new ChromeDriver(options);
-//                driver.manage().window().maximize();
         driver.manage().timeouts().pageLoadTimeout(Duration.ofMinutes(2));
 
         ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
         ScheduledFuture<?> schedule = service.scheduleAtFixedRate(() -> {
             while (true) {
-
                 try {
                     driver.get(url);
                     Document doc = Jsoup.parse(driver.getPageSource());
@@ -124,6 +121,8 @@ public class Main {
             return;
         }
 
+        Gson json = new Gson();
+
         String url = "https://www.shoprite.co.za/c-2256/All-Departments?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page=" + page;
 
         driver.navigate().to(url);
@@ -161,13 +160,38 @@ public class Main {
                 String description = items.select("div").get(0).text();
 
                 String image = "https://www.shoprite.co.za" + doc.getElementsByClass("pdp__image__thumb").first().attr("src");
-                database.addProduct(barcode, productName, description, Double.parseDouble(price_before.isEmpty() ? "0" : price_before),
-                        Double.parseDouble(price_now), weight, unitOfMeasure, bulk, image, link);
+
+                Product product = new Product();
+                product.setId(String.valueOf(barcode));
+                product.setProduct_name(productName);
+                product.setProduct_description(description);
+                product.setProduct_old_price(Double.parseDouble(price_before.isEmpty() ? "0" : price_before));
+                product.setProduct_current_price(Double.parseDouble(price_now));
+                product.setProduct_weight(String.valueOf(weight));
+                product.setProduct_measure(unitOfMeasure);
+                product.setProduct_bulk(bulk);
+                product.setProduct_image(image);
+                product.setProduct_link(link);
+
+                System.out.println("Uploaded" + product.getProduct_name() + "?: " + uploadData(json.toJson(product)));
             } catch (NumberFormatException | IndexOutOfBoundsException ignored) {}
         }
 
         System.out.println("Done: " + url);
         browserCatalog(page - 1, driver);
+    }
+
+    private boolean uploadData(String json) {
+        Request request =  new Request.Builder()
+                .url("http://35.224.46.63:8080/api/v1/product")
+                .post(RequestBody.create(json, MediaType.get("application/json")))
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            return response.isSuccessful();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public static void main(String[] args) {
